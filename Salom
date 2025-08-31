@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Labirint O‘yini</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+    #menu, #game, #info, #creators, #gameOver, #nextLevel {
+      display: none;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background: #ff9800;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #e67e22;
+    }
+    #hud {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      font-size: 20px;
+    }
+    #maze {
+      margin: 50px auto;
+      width: 300px;
+      height: 300px;
+      background: #333;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap: 2px;
+    }
+    .cell { background: #555; }
+    .wall { background: #4fc3f7; } /* Och ko‘k devor */
+    .player { background: lime; }
+    .exit { background: gold; }
+    #message {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+
+    /* Tugmali boshqaruv uchun */
+    #controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+    #controls div {
+      margin: 5px;
+    }
+    #controls button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      border-radius: 50%;
+      background: #ff9800;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    #controls button:hover {
+      background: #e67e22;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MENU -->
+  <div id="menu">
+    <h1>🎮 Labirint O‘yini</h1>
+    <button onclick="startGame()">O‘yinni Boshlash</button>
+    <button onclick="showInfo()">ℹ️ O‘yin haqida</button>
+    <button onclick="showCreators()">👨‍💻 Yaratuvchilar</button>
+  </div>
+
+  <!-- INFO -->
+  <div id="info">
+    <h2>ℹ️ O‘yin haqida</h2>
+    <p>Bu o‘yinda siz labirintdan chiqishingiz kerak. Ekranga surib yoki tugmalar orqali boshqarasiz. ⬆️⬇️⬅️➡️</p>
+    <button onclick="backToMenu()">⬅️ Menyuga qaytish</button>
+  </div>
+
+  <!-- CREATORS -->
+  <div id="creators">
+    <h2>👨‍💻 Yaratuvchilar</h2>
+    <p>O‘yin yaratuvchisi: <b>Muhammad Yusuf</b><br>
+    2008/09/06 kuni tug‘ilgan va bu o‘yinni qiziqib yaratdi 🎉</p>
+    <p>👉 <b>YUSUF_S.D INSTAGRAM PROFILIGA OBUNA BO‘LING!</b></p>
+    <button onclick="backToMenu()">⬅️ Menyuga qaytish</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game">
+    <div id="hud">
+      <div id="score">Ball: 0</div>
+      <div id="playerName">🤩 Olg‘a! 🤩</div>
+      <div id="timer">15:00</div>
+    </div>
+    <div id="maze"></div>
+    <div id="message"></div>
+
+    <!-- 📌 Tugmali boshqaruv -->
+    <div id="controls">
+      <div>
+        <button onclick="move(0,-1)">⬆️</button>
+      </div>
+      <div>
+        <button onclick="move(-1,0)">⬅️</button>
+        <button onclick="move(1,0)">➡️</button>
+      </div>
+      <div>
+        <button onclick="move(0,1)">⬇️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="gameOver">
+    <h2>⏰ Vaqt tugadi!</h2>
+    <p>Endi darsingni qil 😉</p>
+    <button onclick="restartGame()">Qaytadan boshlash</button>
+  </div>
+
+  <!-- NEXT LEVEL -->
+  <div id="nextLevel">
+    <h2>🎉 Bosqich tugadi!</h2>
+    <p>+10 ball qo‘shildi</p>
+    <button onclick="goNextLevel()">Keyingi bosqich</button>
+  </div>
+
+  <script>
+    let mazeEl = document.getElementById("maze");
+    let gameDiv = document.getElementById("game");
+    let menuDiv = document.getElementById("menu");
+    let infoDiv = document.getElementById("info");
+    let creatorsDiv = document.getElementById("creators");
+    let gameOverDiv = document.getElementById("gameOver");
+    let nextLevelDiv = document.getElementById("nextLevel");
+
+    let score = 0, level = 1, timeLeft = 900, timerInterval;
+    let playerPos = {x:0,y:0};
+    let exitPos = {x:9,y:9};
+    let playerName = "Yusuf";
+
+    // Oddiy labirint (10x10)
+    let maze = [
+      "..........",
+      ".######..#",
+      ".#....#..#",
+      ".#..###..#",
+      ".#.......#",
+      ".#####.#.#",
+      ".#.......#",
+      ".#.######.",
+      ".#........",
+      "#########."
+    ];
+
+    function showMenu(){
+      menuDiv.style.display="block";
+      gameDiv.style.display="none";
+      infoDiv.style.display="none";
+      creatorsDiv.style.display="none";
+      gameOverDiv.style.display="none";
+      nextLevelDiv.style.display="none";
+    }
+
+    function showInfo(){ menuDiv.style.display="none"; infoDiv.style.display="block"; }
+    function showCreators(){ menuDiv.style.display="none"; creatorsDiv.style.display="block"; }
+    function backToMenu(){ showMenu(); }
+
+    function startGame(){
+      playerName = prompt("Persanaj ismini kiriting:", "Yusuf");
+      if(!playerName) playerName = "Yusuf";
+      document.getElementById("playerName").textContent = `🤩 Olg‘a ${playerName} 🤩`;
+
+      score = 0; level = 1; timeLeft = 900;
+      playerPos={x:0,y:0};
+      exitPos={x:9,y:9};
+      buildMaze();
+      menuDiv.style.display="none";
+      gameDiv.style.display="block";
+      startTimer();
+    }
+
+    function buildMaze(){
+      mazeEl.innerHTML="";
+      for(let y=0;y<10;y++){
+        for(let x=0;x<10;x++){
+          let cell=document.createElement("div");
+          cell.classList.add("cell");
+          if(maze[y][x]==="#") cell.classList.add("wall");
+          if(x===playerPos.x && y===playerPos.y) cell.classList.add("player");
+          if(x===exitPos.x && y===exitPos.y) cell.classList.add("exit");
+          mazeEl.appendChild(cell);
+        }
+      }
+    }
+
+    function move(dx,dy){
+      let nx=playerPos.x+dx, ny=playerPos.y+dy;
+      if(nx<0||ny<0||nx>9||ny>9) return;
+      if(maze[ny][nx]==="#") return;
+      playerPos={x:nx,y:ny};
+      buildMaze();
+      checkExit();
+    }
+
+    function checkExit(){
+      if(playerPos.x===exitPos.x && playerPos.y===exitPos.y){
+        score+=10;
+        document.getElementById("score").textContent="Ball: "+score;
+        gameDiv.style.display="none";
+        nextLevelDiv.style.display="block";
+      }
+    }
+
+    function goNextLevel(){
+      level++;
+      playerPos={x:0,y:0};
+      gameDiv.style.display="block";
+      nextLevelDiv.style.display="none";
+      buildMaze();
+    }
+
+    function startTimer(){
+      clearInterval(timerInterval);
+      timerInterval=setInterval(()=>{
+        timeLeft--;
+        let min=Math.floor(timeLeft/60);
+        let sec=timeLeft%60;
+        document.getElementById("timer").textContent=`${min}:${sec<10?"0":""}${sec}`;
+        if(timeLeft<=0){
+          clearInterval(timerInterval);
+          gameDiv.style.display="none";
+          gameOverDiv.style.display="block";
+        }
+      },1000);
+    }
+
+    function restartGame(){
+      showMenu();
+    }
+
+    // Telefon boshqaruvi (swipe)
+    let startX, startY;
+    document.addEventListener("touchstart",e=>{
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+    });
+    document.addEventListener("touchend",e=>{
+      let dx=e.changedTouches[0].clientX-startX;
+      let dy=e.changedTouches[0].clientY-startY;
+      if(Math.abs(dx)>Math.abs(dy)){
+        if(dx>0) move(1,0); else move(-1,0);
+      } else {
+        if(dy>0) move(0,1); else move(0,-1);
+      }
+    });
+
+    showMenu();
+  </script>
+</body>
+</html>
