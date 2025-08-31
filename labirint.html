@@ -44,6 +44,38 @@
     button:hover {
       background: #45a049;
     }
+
+    /* Mobil tugmalar */
+    #mobileControls {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .control-btn {
+      width: 60px;
+      height: 60px;
+      margin: 5px;
+      font-size: 24px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 150, 255, 0.7);
+      color: white;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .control-grid div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +94,21 @@
     <button onclick="showCreators()">Yaratuvchilar</button>
   </div>
 
+  <!-- Mobil tugmalar -->
+  <div id="mobileControls">
+    <div class="control-grid">
+      <div></div>
+      <div><button class="control-btn" onclick="move(0, -player.speed)">⬆️</button></div>
+      <div></div>
+      <div><button class="control-btn" onclick="move(-player.speed, 0)">⬅️</button></div>
+      <div></div>
+      <div><button class="control-btn" onclick="move(player.speed, 0)">➡️</button></div>
+      <div></div>
+      <div><button class="control-btn" onclick="move(0, player.speed)">⬇️</button></div>
+      <div></div>
+    </div>
+  </div>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -74,7 +121,7 @@
     let walls = [];
     let score = 0;
     let level = 1;
-    let timeLeft = 900; // 15 daqiqa (sekund)
+    let timeLeft = 900;
     let timerInterval;
     let stars = [];
 
@@ -98,7 +145,6 @@
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         ctx.fill();
 
-        // Harakat
         star.x -= star.speed;
         star.y += star.speed * 0.3;
 
@@ -109,7 +155,6 @@
       });
     }
 
-    // Labirint devorlari (bosqichga qarab qiyinlashadi)
     function generateMaze(level) {
       walls = [];
       let step = 60 - level * 5;
@@ -163,7 +208,6 @@
       if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
       if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
 
-      // Maqsadga yetdi
       if (
         player.x < goal.x + goal.size &&
         player.x + player.size > goal.x &&
@@ -216,10 +260,10 @@
     }
 
     function showCreators() {
-      alert("O‘yin yaratuvchisi: Muhammad Yusuf (2008/09/06) \nBu o‘yinni qiziqib yaratdi. \n👉 YUSUF_S.D Instagram profiliga obuna bo‘ling!");
+      alert("O‘yin yaratuvchisi: Muhammad Yusuf (2008/09/06) \n👉 YUSUF_S.D Instagram profiliga obuna bo‘ling!");
     }
 
-    // Klaviatura bilan boshqarish
+    // Klaviatura
     document.addEventListener("keydown", (e) => {
       if (e.key === "ArrowUp") move(0, -player.speed);
       if (e.key === "ArrowDown") move(0, player.speed);
