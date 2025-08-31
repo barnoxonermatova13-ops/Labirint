@@ -1,275 +1,344 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labirint O‘yini</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: black;
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-    }
+import pygame
+import sys
+import time
+import json
+from pygame.locals import *
 
-    #ui {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      font-size: 20px;
-    }
+# Initialize Pygame
+pygame.init()
 
-    #controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-    }
+# Screen dimensions
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Maze Game")
 
-    button {
-      font-size: 16px;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 10px;
-      border: none;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-    }
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
-    button:hover {
-      background: #45a049;
-    }
+# Fonts
+font = pygame.font.SysFont(None, 36)
+small_font = pygame.font.SysFont(None, 24)
 
-    /* Mobil tugmalar */
-    #mobileControls {
-      position: absolute;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-    }
+# Maze definitions (list of levels)
+mazes = [
+    # Level 1: Simple maze
+    [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 2, 1],  # 2 is exit
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ],
+    # Level 2: More complex
+    [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 2, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ],
+    # Level 3: Even more complex
+    [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+        [1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+        [1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 2, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ]
+    # Add more levels if needed
+]
 
-    .control-btn {
-      width: 60px;
-      height: 60px;
-      margin: 5px;
-      font-size: 24px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(0, 150, 255, 0.7);
-      color: white;
-    }
+# Tile size
+TILE_SIZE = 50
 
-    .control-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
+# Player starting position (level 1)
+player_pos = [1, 1]  # Row, Col
 
-    .control-grid div {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-  </style>
-</head>
-<body>
-  <div id="ui">
-    <div id="playerName">🤩 Olg‘a Yusuf 🤩</div>
-    <div id="score">Ball: 0</div>
-    <div id="level">Bosqich: 1</div>
-    <div id="timer">Vaqt: 900</div>
-  </div>
+# Save file
+SAVE_FILE = "save.json"
 
-  <canvas id="gameCanvas"></canvas>
+def load_save():
+    try:
+        with open(SAVE_FILE, 'r') as f:
+            data = json.load(f)
+            return data['level'], data['score']
+    except FileNotFoundError:
+        return 0, 0
 
-  <div id="controls">
-    <button onclick="startGame()">O‘yinni boshlash</button>
-    <button onclick="showInfo()">O‘yin haqida</button>
-    <button onclick="showCreators()">Yaratuvchilar</button>
-  </div>
+def save_progress(level, score):
+    with open(SAVE_FILE, 'w') as f:
+        json.dump({'level': level, 'score': score}, f)
 
-  <!-- Mobil tugmalar -->
-  <div id="mobileControls">
-    <div class="control-grid">
-      <div></div>
-      <div><button class="control-btn" onclick="move(0, -player.speed)">⬆️</button></div>
-      <div></div>
-      <div><button class="control-btn" onclick="move(-player.speed, 0)">⬅️</button></div>
-      <div></div>
-      <div><button class="control-btn" onclick="move(player.speed, 0)">➡️</button></div>
-      <div></div>
-      <div><button class="control-btn" onclick="move(0, player.speed)">⬇️</button></div>
-      <div></div>
-    </div>
-  </div>
+def draw_maze(maze):
+    for row in range(len(maze)):
+        for col in range(len(maze[row])):
+            if maze[row][col] == 1:
+                pygame.draw.rect(screen, BLACK, (col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            elif maze[row][col] == 2:
+                pygame.draw.rect(screen, GREEN, (col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+def draw_player():
+    pygame.draw.circle(screen, BLUE, (player_pos[1] * TILE_SIZE + TILE_SIZE // 2, player_pos[0] * TILE_SIZE + TILE_SIZE // 2), TILE_SIZE // 3)
 
-    // O'yin parametrlar
-    let player = { x: 40, y: 40, size: 20, speed: 20 };
-    let goal = { x: 400, y: 400, size: 20 };
-    let walls = [];
-    let score = 0;
-    let level = 1;
-    let timeLeft = 900;
-    let timerInterval;
-    let stars = [];
+def draw_buttons():
+    # Direction buttons at bottom
+    button_width = 100
+    button_height = 50
+    bottom_y = SCREEN_HEIGHT - button_height - 10
+    
+    # Left
+    left_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150 - button_width, bottom_y, button_width, button_height)
+    pygame.draw.rect(screen, GREEN, left_rect)
+    screen.blit(small_font.render("Left", True, BLACK), (left_rect.x + 10, left_rect.y + 10))
+    
+    # Right
+    right_rect = pygame.Rect(SCREEN_WIDTH // 2 + 150, bottom_y, button_width, button_height)
+    pygame.draw.rect(screen, GREEN, right_rect)
+    screen.blit(small_font.render("Right", True, BLACK), (right_rect.x + 10, right_rect.y + 10))
+    
+    # Up
+    up_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, bottom_y - button_height - 10, button_width, button_height)
+    pygame.draw.rect(screen, GREEN, up_rect)
+    screen.blit(small_font.render("Up", True, BLACK), (up_rect.x + 20, up_rect.y + 10))
+    
+    # Down
+    down_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, bottom_y + button_height + 10, button_width, button_height)
+    pygame.draw.rect(screen, GREEN, down_rect)
+    screen.blit(small_font.render("Down", True, BLACK), (down_rect.x + 10, down_rect.y + 10))
+    
+    return left_rect, right_rect, up_rect, down_rect
 
-    // Yulduzlar fon animatsiyasi
-    for (let i = 0; i < 100; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 2,
-        speed: Math.random() * 2 + 0.5
-      });
-    }
+def move_player(direction, maze):
+    row, col = player_pos
+    if direction == 'left' and col > 0 and maze[row][col - 1] != 1:
+        player_pos[1] -= 1
+    elif direction == 'right' and col < len(maze[0]) - 1 and maze[row][col + 1] != 1:
+        player_pos[1] += 1
+    elif direction == 'up' and row > 0 and maze[row - 1][col] != 1:
+        player_pos[0] -= 1
+    elif direction == 'down' and row < len(maze) - 1 and maze[row + 1][col] != 1:
+        player_pos[0] += 1
 
-    function drawStars() {
-      ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+def check_exit(maze):
+    row, col = player_pos
+    return maze[row][col] == 2
 
-      ctx.fillStyle = "white";
-      stars.forEach(star => {
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fill();
+def countdown():
+    for i in range(3, 0, -1):
+        screen.fill(WHITE)
+        text = font.render(str(i), True, BLACK)
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2))
+        pygame.display.flip()
+        time.sleep(1)
 
-        star.x -= star.speed;
-        star.y += star.speed * 0.3;
+def input_name():
+    name = ""
+    input_active = True
+    while input_active:
+        screen.fill(WHITE)
+        prompt = font.render("Enter character name:", True, BLACK)
+        screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+        
+        name_text = font.render(name, True, BLACK)
+        screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, SCREEN_HEIGHT // 2))
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == KEYDOWN:
+                if event.key == K_RETURN:
+                    input_active = False
+                elif event.key == K_BACKSPACE:
+                    name = name[:-1]
+                else:
+                    name += event.unicode
+    return name
 
-        if (star.x < 0 || star.y > canvas.height) {
-          star.x = canvas.width;
-          star.y = Math.random() * canvas.height / 2;
-        }
-      });
-    }
+def main_menu():
+    play_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, 100, 200, 50)
+    about_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, 200, 200, 50)
+    creators_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, 300, 200, 50)
+    
+    while True:
+        screen.fill(WHITE)
+        
+        pygame.draw.rect(screen, GREEN, play_button)
+        screen.blit(font.render("O'yinni boshlash", True, BLACK), (play_button.x + 10, play_button.y + 10))
+        
+        pygame.draw.rect(screen, GREEN, about_button)
+        screen.blit(font.render("O'yin haqida", True, BLACK), (about_button.x + 10, about_button.y + 10))
+        
+        pygame.draw.rect(screen, GREEN, creators_button)
+        screen.blit(font.render("Yaratuvchilar", True, BLACK), (creators_button.x + 10, creators_button.y + 10))
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                if play_button.collidepoint(event.pos):
+                    return 'play'
+                elif about_button.collidepoint(event.pos):
+                    return 'about'
+                elif creators_button.collidepoint(event.pos):
+                    return 'creators'
 
-    function generateMaze(level) {
-      walls = [];
-      let step = 60 - level * 5;
-      if (step < 20) step = 20;
-      for (let i = step; i < canvas.width; i += step) {
-        walls.push({ x: i, y: 100, w: 20, h: canvas.height - 200 });
-      }
-    }
+def show_about():
+    while True:
+        screen.fill(WHITE)
+        text = font.render("Bu o'yin murakkab labirintdan chiqish haqida.", True, BLACK)
+        screen.blit(text, (50, 50))
+        text2 = font.render("Boshqaruv: Tugmalar orqali.", True, BLACK)
+        screen.blit(text2, (50, 100))
+        text3 = small_font.render("Bosish orqali qaytish", True, BLACK)
+        screen.blit(text3, (50, 200))
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                return
 
-    function drawMaze() {
-      ctx.fillStyle = "lightblue";
-      walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
-    }
+def show_creators():
+    while True:
+        screen.fill(WHITE)
+        text = small_font.render("O'yin yaratuvchisi: Muhammad Yusuf", True, BLACK)
+        screen.blit(text, (50, 50))
+        text2 = small_font.render("2008/09/06 kunda tug'ilgan", True, BLACK)
+        screen.blit(text2, (50, 100))
+        text3 = small_font.render("va bu o'yinni qiziqib yaratdi", True, BLACK)
+        screen.blit(text3, (50, 150))
+        text4 = small_font.render("YUSUF_S.D INSTAGRAM PROFILIGA OBUNA BO'LING", True, BLACK)
+        screen.blit(text4, (50, 200))
+        text5 = small_font.render("Bosish orqali qaytish", True, BLACK)
+        screen.blit(text5, (50, 300))
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                return
 
-    function drawPlayer() {
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(player.x, player.y, player.size, player.size);
-    }
+def game_loop():
+    current_level, score = load_save()
+    if current_level >= len(mazes):
+        current_level = 0  # Reset if all levels completed
+    
+    name = input_name()
+    countdown()
+    
+    start_time = time.time()
+    total_time = 15 * 60  # 15 minutes in seconds
+    
+    while True:
+        maze = mazes[current_level]
+        
+        # Reset player position for new level
+        player_pos[0], player_pos[1] = 1, 1
+        
+        running = True
+        while running:
+            screen.fill(WHITE)
+            
+            # Check timer
+            elapsed = time.time() - start_time
+            remaining = total_time - elapsed
+            if remaining <= 0:
+                screen.fill(WHITE)
+                text = font.render("Vaqt tugadi, endi darsingni qil!", True, RED)
+                screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))
+                pygame.display.flip()
+                time.sleep(3)
+                return
+            
+            # Draw maze and player
+            draw_maze(maze)
+            draw_player()
+            
+            # Draw buttons
+            left_rect, right_rect, up_rect, down_rect = draw_buttons()
+            
+            # Display score
+            score_text = small_font.render(f"Ball: {score}", True, BLACK)
+            screen.blit(score_text, (10, 10))
+            
+            # Display timer
+            min_rem = int(remaining // 60)
+            sec_rem = int(remaining % 60)
+            timer_text = small_font.render(f"Vaqt: {min_rem:02}:{sec_rem:02}", True, BLACK)
+            screen.blit(timer_text, (SCREEN_WIDTH - 150, 10))
+            
+            # Display name
+            name_text = small_font.render(f"🤩 Olg'a {name} 🤩", True, BLACK)
+            screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, 10))
+            
+            pygame.display.flip()
+            
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == MOUSEBUTTONDOWN:
+                    if left_rect.collidepoint(event.pos):
+                        move_player('left', maze)
+                    elif right_rect.collidepoint(event.pos):
+                        move_player('right', maze)
+                    elif up_rect.collidepoint(event.pos):
+                        move_player('up', maze)
+                    elif down_rect.collidepoint(event.pos):
+                        move_player('down', maze)
+            
+            if check_exit(maze):
+                screen.fill(WHITE)
+                text = font.render("Keyingi bosqich!", True, GREEN)
+                screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))
+                pygame.display.flip()
+                time.sleep(2)
+                score += 10
+                current_level += 1
+                if current_level >= len(mazes):
+                    current_level = 0  # Loop or add more levels
+                save_progress(current_level, score)
+                running = False  # Proceed to next level
 
-    function drawGoal() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
-    }
-
-    function updateUI() {
-      document.getElementById("score").innerText = "Ball: " + score;
-      document.getElementById("level").innerText = "Bosqich: " + level;
-      document.getElementById("timer").innerText = "Vaqt: " + timeLeft;
-    }
-
-    function checkCollision(x, y) {
-      return walls.some(w =>
-        x < w.x + w.w &&
-        x + player.size > w.x &&
-        y < w.y + w.h &&
-        y + player.size > w.y
-      );
-    }
-
-    function move(dx, dy) {
-      let newX = player.x + dx;
-      let newY = player.y + dy;
-
-      if (!checkCollision(newX, newY)) {
-        player.x = newX;
-        player.y = newY;
-      }
-
-      if (player.x < 0) player.x = 0;
-      if (player.y < 0) player.y = 0;
-      if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
-      if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
-
-      if (
-        player.x < goal.x + goal.size &&
-        player.x + player.size > goal.x &&
-        player.y < goal.y + goal.size &&
-        player.y + player.size > goal.y
-      ) {
-        score += 10;
-        level++;
-        player.x = 40;
-        player.y = 40;
-        goal.x = canvas.width - 60;
-        goal.y = canvas.height - 60;
-        generateMaze(level);
-      }
-    }
-
-    function gameLoop() {
-      drawStars();
-      drawMaze();
-      drawPlayer();
-      drawGoal();
-      updateUI();
-      requestAnimationFrame(gameLoop);
-    }
-
-    function startGame() {
-      score = 0;
-      level = 1;
-      timeLeft = 900;
-      player.x = 40;
-      player.y = 40;
-      goal.x = canvas.width - 60;
-      goal.y = canvas.height - 60;
-      generateMaze(level);
-
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          alert("⏰ Vaqt tugadi! Endi darsingni qil 😊");
-        }
-      }, 1000);
-
-      gameLoop();
-    }
-
-    function showInfo() {
-      alert("Bu o‘yin labirintdan chiqish haqida. Har bosqichda labirint yanada qiyinlashadi!");
-    }
-
-    function showCreators() {
-      alert("O‘yin yaratuvchisi: Muhammad Yusuf (2008/09/06) \n👉 YUSUF_S.D Instagram profiliga obuna bo‘ling!");
-    }
-
-    // Klaviatura
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp") move(0, -player.speed);
-      if (e.key === "ArrowDown") move(0, player.speed);
-      if (e.key === "ArrowLeft") move(-player.speed, 0);
-      if (e.key === "ArrowRight") move(player.speed, 0);
-    });
-  </script>
-</body>
-</html>
+if __name__ == "__main__":
+    while True:
+        choice = main_menu()
+        if choice == 'play':
+            game_loop()
+        elif choice == 'about':
+            show_about()
+        elif choice == 'creators':
+            show_creators()
