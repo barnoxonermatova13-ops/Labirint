@@ -2,224 +2,158 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Labirint O‘yini</title>
   <style>
-    body { 
-      margin: 0; 
-      font-family: Arial, sans-serif; 
-      background: #111; 
-      color: white; 
-      text-align: center; 
-    }
-    #menu, #info, #credits, #gameContainer { display: none; }
-    button { 
-      padding: 10px 20px; 
-      margin: 10px; 
-      font-size: 18px; 
-      border-radius: 10px; 
-      cursor: pointer; 
-    }
-    canvas { background: black; display: block; margin: 20px auto; }
-    #hud {
-      position: absolute;
-      top: 10px; left: 10px;
-      color: yellow;
-      font-size: 18px;
-      text-align: left;
-    }
-    #timer {
-      position: absolute;
-      top: 10px; right: 10px;
-      color: red;
-      font-size: 18px;
-    }
+    body { margin: 0; font-family: Arial; text-align: center; background: #111; color: white; }
+    canvas { background: black; display: block; margin: 10px auto; }
+    .menu, .game, .info, .creators { display: none; }
+    button { margin: 5px; padding: 10px 20px; font-size: 16px; border-radius: 8px; }
+    #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); }
+    #controls button { font-size: 24px; margin: 3px; padding: 15px; }
+    #hud { position: absolute; top: 10px; left: 10px; text-align: left; }
   </style>
 </head>
 <body>
 
-  <!-- Menyu -->
-  <div id="menu">
-    <h1>🎮 Labirint O‘yini 🎮</h1>
-    <button onclick="showGame()">O‘yin Boshlash</button>
-    <button onclick="showInfo()">ℹ️ O‘yin haqida</button>
-    <button onclick="showCredits()">👨‍💻 Yaratuvchilar</button>
-  </div>
+<div class="menu" id="menu">
+  <h1>🌀 Labirint O‘yini 🌀</h1>
+  <input type="text" id="playerName" placeholder="Ismingizni kiriting">
+  <br><br>
+  <button onclick="startGame()">O‘yinni boshlash</button>
+  <button onclick="showInfo()">ℹ️ O‘yin haqida</button>
+  <button onclick="showCreators()">👨‍💻 Yaratuvchilar</button>
+</div>
 
-  <!-- O‘yin haqida -->
-  <div id="info">
-    <h2>ℹ️ O‘yin haqida</h2>
-    <p>Bu o‘yinda siz odamchani labirintdan olib chiqishingiz kerak. 
-    Har bosqich qiyinlashib boradi. Vaqt tugashidan oldin chiqishingiz kerak!</p>
-    <button onclick="backToMenu()">⬅️ Ortga</button>
-  </div>
+<div class="info" id="info">
+  <h2>ℹ️ O‘yin haqida</h2>
+  <p>Bu o‘yinda siz labirintdan chiqishingiz kerak.  
+  Har bosqichda labirint yanada murakkab bo‘ladi.  
+  Har chiqishda +10 ball qo‘lga kiritasiz.  
+  Vaqt 15 daqiqa.</p>
+  <button onclick="backToMenu()">⬅️ Ortga</button>
+</div>
 
-  <!-- Yaratuvchilar -->
-  <div id="credits">
-    <h2>👨‍💻 Yaratuvchilar</h2>
-    <p>O‘yin yaratuvchisi: <b>Muhammad Yusuf</b> <br>
-    2008/09/06 kuni tug‘ilgan. <br>
-    Bu o‘yinni qiziqib yaratdi.</p>
-    <p>👉 <b>YUSUF_S.D</b> INSTAGRAM PROFILIGA OBUNA BO‘LING 👈</p>
-    <button onclick="backToMenu()">⬅️ Ortga</button>
-  </div>
+<div class="creators" id="creators">
+  <h2>👨‍💻 Yaratuvchilar</h2>
+  <p>O‘yin yaratuvchisi: <b>Muhammad Yusuf</b><br>
+  2008/09/06 kuni tug‘ilgan va bu o‘yinni qiziqib yaratdi.</p>
+  <p>👉 <b>YUSUF_S.D INSTAGRAM PROFILIGA OBUNA BO‘LING</b></p>
+  <button onclick="backToMenu()">⬅️ Ortga</button>
+</div>
 
-  <!-- O‘yin -->
-  <div id="gameContainer">
-    <h2 id="playerName"></h2>
-    <div id="hud">Ball: <span id="score">0</span> | Level: <span id="level">1</span></div>
-    <div id="timer">Vaqt: <span id="time">900</span>s</div>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+<div class="game" id="game">
+  <div id="hud">
+    <div id="greeting"></div>
+    <div>🏆 Ball: <span id="score">0</span></div>
+    <div>📊 Level: <span id="level">1</span></div>
+    <div>⏰ Vaqt: <span id="timer">15:00</span></div>
   </div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div id="controls">
+    <button onclick="moveUp()">⬆️</button><br>
+    <button onclick="moveLeft()">⬅️</button>
+    <button onclick="moveDown()">⬇️</button>
+    <button onclick="moveRight()">➡️</button>
+  </div>
+</div>
 
 <script>
-  let menu = document.getElementById("menu");
-  let info = document.getElementById("info");
-  let credits = document.getElementById("credits");
-  let gameContainer = document.getElementById("gameContainer");
+let canvas = document.getElementById("gameCanvas");
+let ctx = canvas.getContext("2d");
 
-  let canvas = document.getElementById("gameCanvas");
-  let ctx = canvas.getContext("2d");
+let mazeSize = 10;
+let cellSize = canvas.width / mazeSize;
+let player = {x:0, y:0};
+let exit = {x: mazeSize-1, y: mazeSize-1};
+let score = 0;
+let level = 1;
+let timer = 15*60; // 15 daqiqa
+let timerInterval;
+let playerName = "";
 
-  let score = 0, level = 1, timeLeft = 900; // 15 daqiqa
-  let timerInterval;
-  let player = {x: 1, y: 1};
-  let maze, exit;
-  let cellSize = 40;
-  let playerName = "";
+function showMenu(){ document.getElementById("menu").style.display="block"; }
+function backToMenu(){ hideAll(); showMenu(); }
+function showInfo(){ hideAll(); document.getElementById("info").style.display="block"; }
+function showCreators(){ hideAll(); document.getElementById("creators").style.display="block"; }
+function hideAll(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="none";
+  document.getElementById("info").style.display="none";
+  document.getElementById("creators").style.display="none";
+}
 
-  // Menyuni ko‘rsatish
-  function showMenu() {
-    menu.style.display = "block";
-    info.style.display = "none";
-    credits.style.display = "none";
-    gameContainer.style.display = "none";
-  }
-  function showInfo() {
-    menu.style.display = "none";
-    info.style.display = "block";
-  }
-  function showCredits() {
-    menu.style.display = "none";
-    credits.style.display = "block";
-  }
-  function backToMenu() { showMenu(); }
+function startGame(){
+  playerName = document.getElementById("playerName").value || "O‘yinchi";
+  document.getElementById("greeting").innerText = "🤩 Olg‘a, " + playerName + "! 🤩";
+  hideAll();
+  document.getElementById("game").style.display="block";
+  resetGame();
+  startTimer();
+}
 
-  // O‘yin boshlash
-  function showGame() {
-    playerName = prompt("Persanaj ismini kiriting:");
-    if (!playerName) playerName = "O‘yinchi";
-    document.getElementById("playerName").innerText = "🤩Olg‘a " + playerName + " 🤩";
+function resetGame(){
+  player = {x:0,y:0};
+  exit = {x:mazeSize-1, y:mazeSize-1};
+  drawGame();
+}
 
-    menu.style.display = "none";
-    gameContainer.style.display = "block";
-
-    startGame();
-  }
-
-  function startGame() {
-    score = 0;
-    level = 1;
-    timeLeft = 900;
-    generateMaze(level);
-    draw();
-
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById("time").innerText = timeLeft;
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        alert("⏰ Vaqt tugadi! Endi darsingni qil 😁");
-        showMenu();
-      }
-    }, 1000);
-  }
-
-  // Oddiy labirint yaratish
-  function generateMaze(lv) {
-    maze = [
-      [1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,1,0,0,0,0,1],
-      [1,0,1,0,1,0,1,1,0,1],
-      [1,0,1,0,0,0,0,1,0,1],
-      [1,0,1,1,1,1,0,1,0,1],
-      [1,0,0,0,0,0,0,1,0,1],
-      [1,1,1,1,1,0,1,1,0,1],
-      [1,0,0,0,0,0,1,0,0,1],
-      [1,0,1,1,1,0,0,0,2,1],
-      [1,1,1,1,1,1,1,1,1,1],
-    ];
-    player = {x:1, y:1};
-    exit = {x:8, y:8};
-  }
-
-  // Chizish
-  function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    for (let y=0; y<maze.length; y++) {
-      for (let x=0; x<maze[y].length; x++) {
-        if (maze[y][x] === 1) {
-          ctx.fillStyle = "blue";
-          ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
-        } else if (maze[y][x] === 2) {
-          ctx.fillStyle = "green";
-          ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
-        }
-      }
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    timer--;
+    let min = Math.floor(timer/60);
+    let sec = timer%60;
+    document.getElementById("timer").innerText = `${min}:${sec<10?"0":""}${sec}`;
+    if(timer<=0){
+      clearInterval(timerInterval);
+      alert("⏰ Vaqt tugadi, endi darsingni qil!");
+      backToMenu();
     }
-    // Player
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(player.x*cellSize+20, player.y*cellSize+20, 15, 0, Math.PI*2);
-    ctx.fill();
+  },1000);
+}
+
+function drawGame(){
+  ctx.fillStyle="black";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // oddiy labirint (qiyinroq qilish mumkin bosqichda)
+  ctx.fillStyle="white";
+  for(let i=0;i<mazeSize;i++){
+    for(let j=0;j<mazeSize;j++){
+      ctx.strokeRect(i*cellSize, j*cellSize, cellSize, cellSize);
+    }
   }
 
-  // Harakat
-  function move(dx, dy) {
-    let nx = player.x + dx;
-    let ny = player.y + dy;
-    if (maze[ny][nx] !== 1) {
-      player.x = nx;
-      player.y = ny;
+  // player
+  ctx.fillStyle="lime";
+  ctx.fillRect(player.x*cellSize, player.y*cellSize, cellSize, cellSize);
+
+  // exit
+  ctx.fillStyle="gold";
+  ctx.fillRect(exit.x*cellSize, exit.y*cellSize, cellSize, cellSize);
+}
+
+function move(dx,dy){
+  let nx=player.x+dx, ny=player.y+dy;
+  if(nx>=0 && ny>=0 && nx<mazeSize && ny<mazeSize){
+    player.x=nx; player.y=ny;
+    drawGame();
+    if(player.x==exit.x && player.y==exit.y){
+      score+=10; level++; mazeSize+=2; cellSize=canvas.width/mazeSize;
+      document.getElementById("score").innerText=score;
+      document.getElementById("level").innerText=level;
+      alert("🎉 Bosqich tugadi! Keyingi bosqich!");
+      resetGame();
     }
-    if (nx === exit.x && ny === exit.y) {
-      score += 10;
-      level++;
-      document.getElementById("score").innerText = score;
-      document.getElementById("level").innerText = level;
-      alert("🎉 Keyingi bosqich!");
-      generateMaze(level);
-    }
-    draw();
   }
+}
 
-  // Klaviatura
-  document.addEventListener("keydown", e => {
-    if (e.key === "ArrowUp") move(0,-1);
-    if (e.key === "ArrowDown") move(0,1);
-    if (e.key === "ArrowLeft") move(-1,0);
-    if (e.key === "ArrowRight") move(1,0);
-  });
+function moveUp(){ move(0,-1); }
+function moveDown(){ move(0,1); }
+function moveLeft(){ move(-1,0); }
+function moveRight(){ move(1,0); }
 
-  // Telefon uchun swipe
-  let startX, startY;
-  canvas.addEventListener("touchstart", e => {
-    let t = e.touches[0];
-    startX = t.clientX;
-    startY = t.clientY;
-  });
-  canvas.addEventListener("touchend", e => {
-    let t = e.changedTouches[0];
-    let dx = t.clientX - startX;
-    let dy = t.clientY - startY;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx > 0) move(1,0); else move(-1,0);
-    } else {
-      if (dy > 0) move(0,1); else move(0,-1);
-    }
-  });
-
-  showMenu();
+showMenu();
 </script>
 </body>
 </html>
